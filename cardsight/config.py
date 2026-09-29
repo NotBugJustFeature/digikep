@@ -11,7 +11,7 @@ OUTPUTS_DIR: Path = PROJECT_ROOT / "outputs"
 
 KAGGLE_DATASET_HANDLE: str = "andy8744/playing-cards-object-detection-dataset"
 DEFAULT_BASE_MODEL: str = "yolo26n.pt"
-DEFAULT_RUN_NAME: str = "playing_cards_yolo11n"
+DEFAULT_RUN_NAME: str = "playing_cards_yolo26n"
 DEFAULT_CONFIDENCE: float = 0.45
 DEFAULT_IOU: float = 0.5
 DEFAULT_IMAGE_SIZE: int = 640

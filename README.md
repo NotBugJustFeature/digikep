@@ -6,7 +6,7 @@ CardSight trains a YOLO model to recognize all 52 standard playing cards and run
 
 - Project-local Kaggle dataset download to `dataset/playing_cards/`
 - Normalized YOLO dataset configuration at `dataset/cards.yaml`
-- YOLO11 training script with reproducible paths and settings
+- YOLO26 training script with reproducible paths and settings
 - Gradio application for image, video, and live camera detection
 - Detection details for images/camera and aggregate counts for videos
 
@@ -36,7 +36,7 @@ uv run download_dataset.py --force
 
 ## 2. Train the detector
 
-The default command fine-tunes the small YOLO11 model for 50 epochs:
+The default command fine-tunes the nano YOLO26 model for 50 epochs:
 
 ```bash
 uv run train.py
@@ -50,7 +50,18 @@ uv run train.py --epochs 50 --batch 8 --device mps
 uv run train.py --epochs 5 --batch 4 --device cpu
 ```
 
-Training outputs are written to `runs/playing_cards_yolo11n/`. The best weights are also copied to `models/best.pt`, which is the application default. GPU training is strongly recommended for the full dataset.
+Training outputs are written to `runs/playing_cards_yolo26n/`. The best weights are also copied to `models/best.pt`, which is the application default. GPU training is strongly recommended for the full dataset.
+
+To resume an interrupted run, use its `last.pt` checkpoint. This restores the saved
+epoch, optimizer, learning-rate schedule, and training settings; `--device` may be
+changed when moving the run to Colab:
+
+```bash
+uv run train.py --resume /absolute/path/to/weights/last.pt --device 0
+```
+
+Resume continues toward the original total epoch count. To start a new fine-tuning
+stage instead, pass `best.pt` with `--model` and choose a new `--epochs` value.
 
 ## 3. Run the application
 

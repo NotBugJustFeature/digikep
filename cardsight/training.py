@@ -20,6 +20,7 @@ from cardsight.errors import DatasetConfigurationError
 class TrainingConfig:
     dataset_config: Path
     base_model: str
+    resume_checkpoint: Path | None
     epochs: int
     batch_size: int
     image_size: int
@@ -41,9 +42,21 @@ def validate_training_config(config: TrainingConfig) -> None:
         raise ValueError(f"Image size must be positive, received {config.image_size}.")
     if config.workers < 0:
         raise ValueError(f"Workers cannot be negative, received {config.workers}.")
+    if config.resume_checkpoint is not None:
+        if not config.resume_checkpoint.is_file():
+            raise FileNotFoundError(
+                "Resume checkpoint was not found at "
+                f"'{config.resume_checkpoint}'. Provide the path to the interrupted "
+                "run's weights/last.pt file."
+            )
+        if config.resume_checkpoint.suffix.lower() != ".pt":
+            raise ValueError(
+                "Resume checkpoint must be an Ultralytics .pt file, received "
+                f"'{config.resume_checkpoint}'."
+            )
 
 
-def training_arguments(config: TrainingConfig) -> dict[str, object]:
+def fresh_training_arguments(config: TrainingConfig) -> dict[str, object]:
     arguments: dict[str, object] = {
         "data": str(config.dataset_config.resolve()),
         "epochs": config.epochs,
@@ -62,10 +75,25 @@ def training_arguments(config: TrainingConfig) -> dict[str, object]:
     return arguments
 
 
+def resume_training_arguments(config: TrainingConfig) -> dict[str, object]:
+    arguments: dict[str, object] = {
+        "data": str(config.dataset_config.resolve()),
+        "resume": True,
+    }
+    if config.device is not None:
+        arguments["device"] = config.device
+    return arguments
+
+
 def train_detector(config: TrainingConfig) -> Path:
     validate_training_config(config)
-    model = YOLO(config.base_model)
-    model.train(**training_arguments(config))
+    if config.resume_checkpoint is None:
+        model = YOLO(config.base_model)
+        train_arguments = fresh_training_arguments(config)
+    else:
+        model = YOLO(str(config.resume_checkpoint.resolve()))
+        train_arguments = resume_training_arguments(config)
+    model.train(**train_arguments)
     trainer_value: object = model.trainer
     save_directory_value: object = getattr(trainer_value, "save_dir", None)
     if not isinstance(save_directory_value, (str, Path)):
@@ -89,7 +117,15 @@ def train_detector(config: TrainingConfig) -> Path:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Train the playing-card YOLO detector.")
     parser.add_argument("--data", type=Path, default=DATASET_CONFIG_PATH)
-    parser.add_argument("--model", default=DEFAULT_BASE_MODEL)
+    model_source = parser.add_mutually_exclusive_group()
+    model_source.add_argument("--model", default=DEFAULT_BASE_MODEL)
+    model_source.add_argument(
+        "--resume",
+        type=Path,
+        default=None,
+        metavar="LAST_PT",
+        help="Resume an interrupted run from its weights/last.pt checkpoint.",
+    )
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--image-size", type=int, default=DEFAULT_IMAGE_SIZE)
@@ -107,6 +143,7 @@ def main() -> None:
     config = TrainingConfig(
         dataset_config=arguments.data,
         base_model=arguments.model,
+        resume_checkpoint=arguments.resume,
         epochs=arguments.epochs,
         batch_size=arguments.batch,
         image_size=arguments.image_size,
