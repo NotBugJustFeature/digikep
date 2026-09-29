@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Downloaded datasets, trained weights, and generated media
+dataset/
+models/
+runs/
+outputs/
+*.pt
