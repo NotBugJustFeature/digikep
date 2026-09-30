@@ -10,6 +10,10 @@ class DatasetConfigurationError(CardSightError):
     """Raised when the dataset does not contain the expected YOLO structure."""
 
 
+class DatasetAugmentationError(CardSightError):
+    """Raised when dataset images or labels cannot be augmented safely."""
+
+
 class ModelNotFoundError(CardSightError):
     """Raised when inference is requested before a model has been trained."""
 

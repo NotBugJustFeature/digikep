@@ -16,6 +16,7 @@ dependencies = [
 cardsight = "cardsight.app:main"
 cardsight-train = "cardsight.training:main"
 cardsight-download = "cardsight.dataset:main"
+cardsight-augment = "cardsight.augmentation:main"
 
 [build-system]
 requires = ["hatchling"]

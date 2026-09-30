@@ -34,12 +34,40 @@ To deliberately replace an existing download:
 uv run download_dataset.py --force
 ```
 
-## 2. Train the detector
+## 2. Augment the training dataset (optional)
+
+Create three deterministic OpenCV variations of every training image. Each variation
+combines image rotation with a random perspective change using the fixed seed `42`.
+The YOLO bounding boxes are transformed and clipped together with their images.
+
+```bash
+uv run augment_dataset.py
+```
+
+Useful options:
+
+```bash
+uv run augment_dataset.py --variations 5 --max-rotation 180 --max-perspective 0.18
+uv run augment_dataset.py --force
+```
+
+Generated files are written to `dataset/augmented/train/`, leaving the source data
+untouched. The command writes `dataset/cards_augmented.yaml`, which includes both the
+original and augmented training images. Validation and test data are deliberately not
+augmented.
+
+## 3. Train the detector
 
 The default command fine-tunes the nano YOLO26 model for 50 epochs:
 
 ```bash
 uv run train.py
+```
+
+To train with the generated variations:
+
+```bash
+uv run train.py --data dataset/cards_augmented.yaml --epochs 50 --batch 8 --device mps
 ```
 
 Useful options:
@@ -63,7 +91,7 @@ uv run train.py --resume /absolute/path/to/weights/last.pt --device 0
 Resume continues toward the original total epoch count. To start a new fine-tuning
 stage instead, pass `best.pt` with `--model` and choose a new `--epochs` value.
 
-## 3. Run the application
+## 4. Run the application
 
 ```bash
 uv run main.py
@@ -88,6 +116,7 @@ cardsight/
   app.py          Gradio interface
   config.py       Project paths and defaults
   dataset.py      Kaggle download and YAML normalization
+  augmentation.py OpenCV rotation and perspective dataset augmentation
   detector.py     Ultralytics inference connector
   media.py        Image and video processing
   training.py     YOLO training pipeline
